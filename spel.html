@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<title>Flappy Fågel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: Arial, sans-serif; }
+  canvas { border: 3px solid #a00fbd; border-radius: 8px; }
+  #info { color: #fff; margin-top: 12px; font-size: 14px; opacity: 0.7; }
+</style>
+</head>
+<body>
+<canvas id="c" width="400" height="600"></canvas>
+<div id="info">Tryck MELLANSLAG eller klicka för att flyga</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = canvas.width, H = canvas.height;
+const GRAVITY = 0.05, JUMP = -3, PIPE_W = 60, GAP = 160, PIPE_SPEED = 1;
+
+let bird, pipes, score, best, state, frame;
+
+function reset() {
+  bird = { x: 80, y: H / 2, vy: 0, r: 18 };
+  pipes = [];
+  score = 0;
+  frame = 0;
+  state = 'waiting'; // waiting | playing | dead
+}
+
+function flap() {
+  if (state === 'dead') { reset(); return; }
+  if (state === 'waiting') state = 'playing';
+  bird.vy = JUMP;
+}
+
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); flap(); } });
+canvas.addEventListener('click', flap);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); });
+
+function spawnPipe() {
+  const top = 80 + Math.random() * (H - GAP - 160);
+  pipes.push({ x: W, top });
+}
+
+function drawBird() {
+  const x = bird.x, y = bird.y, r = bird.r;
+  const angle = Math.min(Math.max(bird.vy * 0.06, -0.5), 1.2);
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  // body
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 0.85, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // wing
+  ctx.fillStyle = '#FFA500';
+  ctx.beginPath();
+  ctx.ellipse(-4, 4, r * 0.55, r * 0.35, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // eye
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(8, -5, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(10, -5, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // beak
+  ctx.fillStyle = '#FF6B35';
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(24, -3);
+  ctx.lineTo(24, 3);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPipe(p) {
+  const radius = 6;
+
+  // top pipe
+  ctx.fillStyle = '#27ae60';
+  ctx.beginPath();
+  ctx.roundRect(p.x, 0, PIPE_W, p.top, [0, 0, radius, radius]);
+  ctx.fill();
+  ctx.fillStyle = '#2ecc71';
+  ctx.fillRect(p.x - 4, p.top - 24, PIPE_W + 8, 24);
+
+  // bottom pipe
+  const bot = p.top + GAP;
+  ctx.fillStyle = '#27ae60';
+  ctx.beginPath();
+  ctx.roundRect(p.x, bot, PIPE_W, H - bot, [radius, radius, 0, 0]);
+  ctx.fill();
+  ctx.fillStyle = '#2ecc71';
+  ctx.fillRect(p.x - 4, bot, PIPE_W + 8, 24);
+}
+
+function drawBg() {
+  // sky gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#87CEEB');
+  grad.addColorStop(1, '#98D8E8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // ground
+  ctx.fillStyle = '#8B6914';
+  ctx.fillRect(0, H - 30, W, 30);
+  ctx.fillStyle = '#90EE90';
+  ctx.fillRect(0, H - 30, W, 10);
+}
+
+function checkCollision() {
+  const { x, y, r } = bird;
+  if (y + r > H - 30 || y - r < 0) return true;
+  for (const p of pipes) {
+    if (x + r > p.x + 4 && x - r < p.x + PIPE_W - 4) {
+      if (y - r < p.top || y + r > p.top + GAP) return true;
+    }
+  }
+  return false;
+}
+
+function drawHUD() {
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 36px Arial';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 4;
+  ctx.fillText(score, W / 2, 60);
+  ctx.shadowBlur = 0;
+}
+
+function drawOverlay(title, sub) {
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(0, 0, W, H);
+
+  const boxW = 280, boxH = 180, boxX = (W - boxW) / 2, boxY = H / 2 - 90;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+  ctx.fill();
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = state === 'dead' ? '#e94560' : '#FFD700';
+  ctx.font = 'bold 44px Arial';
+  ctx.fillText(title, W / 2, H / 2 - 44);
+
+  if (score > 0 || state === 'dead') {
+    ctx.fillStyle = '#fff';
+    ctx.font = '22px Arial';
+    ctx.fillText('Poäng: ' + score, W / 2, H / 2 + 2);
+    ctx.fillText('Bästa: ' + (best || 0), W / 2, H / 2 + 34);
+  }
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px Arial';
+  ctx.fillText(sub, W / 2, H / 2 + 70);
+}
+
+function loop() {
+  drawBg();
+
+  if (state === 'playing') {
+    frame++;
+    bird.vy += GRAVITY;
+    bird.y += bird.vy;
+
+    if (frame % 180 === 0) spawnPipe();
+
+    for (const p of pipes) p.x -= PIPE_SPEED;
+    pipes = pipes.filter(p => p.x + PIPE_W > 0);
+
+    for (const p of pipes) {
+      if (!p.passed && p.x + PIPE_W < bird.x) {
+        p.passed = true;
+        score++;
+      }
+    }
+
+    if (checkCollision()) {
+      state = 'dead';
+      if (!best || score > best) best = score;
+    }
+  }
+
+  pipes.forEach(drawPipe);
+  drawBird();
+  drawHUD();
+
+  if (state === 'waiting') drawOverlay('Flappy langley', 'Högerklicka för att starta');
+  if (state === 'dead') drawOverlay('Game Over', 'Högerklicka för att försöka igen');
+
+  requestAnimationFrame(loop);
+}
+
+reset();
+loop();
+</script>
+</body>
+</html>
