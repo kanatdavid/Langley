@@ -47,41 +47,84 @@ function spawnPipe() {
 
 function drawBird() {
   const x = bird.x, y = bird.y, r = bird.r;
-  const angle = Math.min(Math.max(bird.vy * 0.06, -0.5), 1.2);
+  const tilt = Math.min(Math.max(bird.vy * 0.04, -0.4), 0.9);
+  const earFlap = bird.vy * 0.12;
 
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(angle);
+  ctx.rotate(tilt);
+
+  // back ear
+  ctx.save();
+  ctx.translate(8, -13);
+  ctx.rotate(earFlap * 0.7);
+  ctx.fillStyle = '#5C2A0A';
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 5, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // body
-  ctx.fillStyle = '#FFD700';
+  ctx.fillStyle = '#8B4513';
   ctx.beginPath();
-  ctx.ellipse(0, 0, r, r * 0.85, 0, 0, Math.PI * 2);
+  ctx.ellipse(-2, 3, r, r * 0.75, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // wing
-  ctx.fillStyle = '#FFA500';
+  // tail
+  ctx.strokeStyle = '#8B4513';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.ellipse(-4, 4, r * 0.55, r * 0.35, -0.5, 0, Math.PI * 2);
+  ctx.moveTo(-r + 2, 0);
+  ctx.quadraticCurveTo(-r - 8, -10, -r - 4, -18);
+  ctx.stroke();
+
+  // head
+  ctx.fillStyle = '#A0522D';
+  ctx.beginPath();
+  ctx.arc(10, -4, r * 0.72, 0, Math.PI * 2);
   ctx.fill();
+
+  // front ear
+  ctx.save();
+  ctx.translate(6, -14);
+  ctx.rotate(earFlap);
+  ctx.fillStyle = '#7B3A1A';
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 6, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // eye
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(8, -5, 6, 0, Math.PI * 2);
+  ctx.arc(14, -6, 5, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#222';
+  ctx.fillStyle = '#111';
   ctx.beginPath();
-  ctx.arc(10, -5, 3, 0, Math.PI * 2);
+  ctx.arc(15, -6, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(16, -7.5, 1, 0, Math.PI * 2);
   ctx.fill();
 
-  // beak
-  ctx.fillStyle = '#FF6B35';
+  // snout
+  ctx.fillStyle = '#C68642';
   ctx.beginPath();
-  ctx.moveTo(14, 0);
-  ctx.lineTo(24, -3);
-  ctx.lineTo(24, 3);
-  ctx.closePath();
+  ctx.ellipse(22, -1, 7, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // nose
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.ellipse(26, -3, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // tongue
+  ctx.fillStyle = '#FF69B4';
+  ctx.beginPath();
+  ctx.ellipse(23, 3, 3, 5, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -148,7 +191,7 @@ function drawOverlay(title, sub) {
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.fillRect(0, 0, W, H);
 
-  const boxW = 280, boxH = 180, boxX = (W - boxW) / 2, boxY = H / 2 - 90;
+  const boxW = 330, boxH = 180, boxX = (W - boxW) / 2, boxY = H / 2 - 90;
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.beginPath();
   ctx.roundRect(boxX, boxY, boxW, boxH, 12);
